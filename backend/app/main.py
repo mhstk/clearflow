@@ -93,13 +93,23 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Configure CORS - use specific origins from settings
+# Configure CORS - hardcode production URLs + env var origins
+cors_origins = [
+    "https://clearflow-front.vercel.app",  # Production frontend
+    "http://localhost:5173",                # Local development
+    "http://localhost:3000",
+]
+# Add any additional origins from env var
+cors_origins.extend(settings.cors_origins_list)
+# Remove duplicates
+cors_origins = list(set(cors_origins))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Include routers
