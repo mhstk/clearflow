@@ -1,0 +1,519 @@
+{
+	"info": {
+		"_postman_id": "b1c2d3e4-f5a6-7890-abcd-ef1234567890",
+		"name": "Clearflow Personal Finance API",
+		"description": "Complete API collection for the Clearflow Personal Finance Intelligence Dashboard",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8000"
+		},
+		{
+			"key": "openRouterKey",
+			"value": "your-openrouter-api-key-here"
+		}
+	],
+	"item": [
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "Root",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/"
+					}
+				},
+				{
+					"name": "Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/health"
+					}
+				}
+			]
+		},
+		{
+			"name": "Accounts",
+			"item": [
+				{
+					"name": "Get All Accounts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/api/v1/accounts/"
+					}
+				},
+				{
+					"name": "Get Account by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/api/v1/accounts/1"
+					}
+				},
+				{
+					"name": "Create Account",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Main Checking\",\n    \"account_type\": \"checking\",\n    \"institution\": \"TD Bank\",\n    \"currency\": \"CAD\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/api/v1/accounts/"
+					}
+				}
+			]
+		},
+		{
+			"name": "Transactions",
+			"item": [
+				{
+					"name": "Upload CSV",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": ""
+								},
+								{
+									"key": "account_id",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "auto_categorize",
+									"value": "true",
+									"type": "text"
+								}
+							]
+						},
+						"url": "{{baseUrl}}/api/v1/transactions/upload"
+					}
+				},
+				{
+					"name": "Get Transactions View - Default",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/api/v1/transactions/view?page=1&page_size=50"
+					}
+				},
+				{
+					"name": "Get Transactions View - With Date Range",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/api/v1/transactions/view?date_range=last_3_months&page=1&page_size=100"
+					}
+				},
+				{
+					"name": "Get Transactions View - Custom Dates",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/api/v1/transactions/view?start_date=2024-01-01&end_date=2024-12-31&page=1&page_size=100"
+					}
+				},
+				{
+					"name": "Get Transactions View - With Filters",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/api/v1/transactions/view?date_range=last_6_months&category=Groceries&category=Shopping&merchant_query=walmart&min_amount=-500&max_amount=-10&page=1&page_size=50"
+					}
+				},
+				{
+					"name": "Get Transaction by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/api/v1/transactions/1"
+					}
+				},
+				{
+					"name": "Update Transaction Category",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"category\": \"Groceries\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/api/v1/transactions/1/category"
+					}
+				},
+				{
+					"name": "Update Transaction Note",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"note_user\": \"Weekly grocery shopping\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/api/v1/transactions/1/note"
+					}
+				},
+				{
+					"name": "Update Transaction (Full)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"category\": \"Shopping\",\n    \"note_user\": \"Birthday gift for mom\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/api/v1/transactions/1"
+					}
+				},
+				{
+					"name": "Get Categories",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/api/v1/transactions/categories"
+					}
+				},
+				{
+					"name": "Detect Recurring Transactions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/api/v1/transactions/recurring?min_occurrences=3"
+					}
+				}
+			]
+		},
+		{
+			"name": "AI",
+			"item": [
+				{
+					"name": "Get Valid Categories",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/api/v1/ai/categories"
+					}
+				},
+				{
+					"name": "Categorize Merchant",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"merchant_key\": \"walmart\",\n    \"sample_descriptions\": [\n        \"WALMART #1234 TORONTO ON\",\n        \"WAL-MART SUPERCENTRE\"\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/api/v1/ai/categorize_merchant"
+					}
+				},
+				{
+					"name": "Batch Categorize Transactions",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"transaction_ids\": [1, 2, 3, 4, 5],\n    \"auto_apply\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/api/v1/ai/categorize_batch"
+					}
+				},
+				{
+					"name": "Generate AI Insights",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"start_date\": \"2024-01-01\",\n    \"end_date\": \"2024-12-31\",\n    \"category\": [\"Groceries\", \"Eating Out\"],\n    \"min_amount\": -1000,\n    \"max_amount\": 0\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/api/v1/ai/insights"
+					}
+				},
+				{
+					"name": "Generate AI Insights - All Transactions",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseUrl}}/api/v1/ai/insights"
+					}
+				}
+			]
+		},
+		{
+			"name": "Dashboard",
+			"item": [
+				{
+					"name": "Get Dashboard Stats (Current Month)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/api/v1/dashboard/stats"
+					}
+				},
+				{
+					"name": "Get Dashboard Stats (Custom Period)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/api/v1/dashboard/stats/period?months=3"
+					}
+				}
+			]
+		},
+		{
+			"name": "Recurring Payments",
+			"item": [
+				{
+					"name": "Get Recurring Payments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/api/v1/recurring/"
+					}
+				},
+				{
+					"name": "Get Recurring Payments (Force Refresh)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/api/v1/recurring/?force_refresh=true"
+					}
+				},
+				{
+					"name": "Analyze Recurring Payments",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "{{baseUrl}}/api/v1/recurring/analyze"
+					}
+				},
+				{
+					"name": "Get Recurring Insights",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/api/v1/recurring/insights"
+					}
+				},
+				{
+					"name": "Get Recurring Insights (Force Refresh)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/api/v1/recurring/insights?force_refresh=true"
+					}
+				},
+				{
+					"name": "Get Upcoming Payments (7 days)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/api/v1/recurring/upcoming"
+					}
+				},
+				{
+					"name": "Get Upcoming Payments (Custom Days)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/api/v1/recurring/upcoming?days=14"
+					}
+				}
+			]
+		},
+		{
+			"name": "OpenRouter AI (External)",
+			"description": "Direct calls to OpenRouter API - these are the AI requests made by the backend",
+			"item": [
+				{
+					"name": "Merchant Categorization",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{openRouterKey}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"model\": \"anthropic/claude-3.5-sonnet\",\n    \"messages\": [\n        {\n            \"role\": \"user\",\n            \"content\": \"You are helping categorize financial transactions.\\nYou will receive several raw transaction descriptions from a bank statement.\\n\\nChoose one high-level category from this list:\\nGroceries, Rent, Transport, Eating Out, Shopping, Subscription, Utilities, Income, Other\\n\\nSample descriptions for merchant \\\"walmart\\\":\\n- WALMART #1234 TORONTO ON\\n- WAL-MART SUPERCENTRE #5678\\n\\nGenerate:\\n1. A category from the list above\\n2. A short user-friendly label (max 30 characters) summarizing typical transactions for this merchant\\n3. A one-sentence explanation of what this merchant likely is\\n\\nReturn ONLY valid JSON with keys: category, note, explanation.\\nExample: {\\\"category\\\": \\\"Groceries\\\", \\\"note\\\": \\\"Grocery shopping - Walmart\\\", \\\"explanation\\\": \\\"Walmart is a large retail store selling groceries and household items.\\\"}\"\n        }\n    ],\n    \"temperature\": 0.3\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "https://openrouter.ai/api/v1/chat/completions"
+					}
+				},
+				{
+					"name": "Recurring Detection (Batch)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{openRouterKey}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"model\": \"amazon/nova-2-lite-v1:free\",\n    \"messages\": [\n        {\n            \"role\": \"user\",\n            \"content\": \"Analyze these merchants for recurring payment patterns:\\n\\nMerchant 1: \\\"NETFLIX.COM\\\" (key: netflix)\\nCategory: Subscription\\nTransactions:\\n   1. 2024-11-15: -$15.99\\n   2. 2024-10-15: -$15.99\\n   3. 2024-09-15: -$15.99\\nStats: 3 transactions, avg interval 30 days, Fixed at $15.99\\n\\nMerchant 2: \\\"SPOTIFY\\\" (key: spotify)\\nCategory: Subscription\\nTransactions:\\n   1. 2024-11-20: -$9.99\\n   2. 2024-10-20: -$9.99\\n   3. 2024-09-20: -$9.99\\nStats: 3 transactions, avg interval 30 days, Fixed at $9.99\\n\\nFor EACH merchant, determine:\\n1. Is this a recurring payment?\\n2. Are transactions the SAME recurring bill (based on notes/amounts)?\\n3. Frequency (weekly/bi-weekly/monthly/quarterly/yearly/none)\\n4. Is amount fixed or variable?\\n5. Next expected payment date\\n6. Confidence level\\n\\nReturn a JSON array with one object per merchant in order:\\n[\\n  {\\n    \\\"merchant_key\\\": \\\"netflix\\\",\\n    \\\"is_recurring\\\": true,\\n    \\\"same_transaction\\\": true,\\n    \\\"frequency\\\": \\\"monthly\\\",\\n    \\\"typical_amount\\\": 15.99,\\n    \\\"amount_variance\\\": \\\"fixed\\\",\\n    \\\"confidence\\\": \\\"high\\\",\\n    \\\"next_expected_date\\\": \\\"2024-12-15\\\",\\n    \\\"notes\\\": \\\"Monthly streaming subscription\\\"\\n  },\\n  ...\\n]\\n\\n**CRITICAL:** Return ONLY the JSON array. No additional text.\"\n        }\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "https://openrouter.ai/api/v1/chat/completions"
+					}
+				},
+				{
+					"name": "Recurring Insights",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{openRouterKey}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"model\": \"amazon/nova-2-lite-v1:free\",\n    \"messages\": [\n        {\n            \"role\": \"user\",\n            \"content\": \"Analyze these recurring payments and generate insights:\\n\\n**Recurring Payments:**\\n1. Netflix: $15.99/monthly (fixed) - Subscription - Next: 2024-12-15\\n2. Spotify: $9.99/monthly (fixed) - Subscription - Next: 2024-12-20\\n3. Gym Membership: $49.99/monthly (fixed) - Other - Next: 2024-12-01\\n4. Phone Bill: $85.00/monthly (variable) - Utilities - Next: 2024-12-05\\n\\n**Financial Context:**\\n- Total Monthly Expenses: $2500.00\\n- Total Monthly Income: $5000.00\\n\\n**Generate insights in these categories:**\\n\\n1. **Cost Analysis**: Summarize total recurring costs (monthly/yearly)\\n2. **Optimization**: Suggest ways to save money (bundles, unused services, etc.)\\n3. **Anomaly Detection**: Flag any unusual patterns or concerns\\n4. **Predictions**: Upcoming payment reminders and cash flow predictions\\n\\n**Response Format (JSON only):**\\n{\\n  \\\"summary\\\": {\\n    \\\"total_monthly\\\": 160.97,\\n    \\\"total_yearly\\\": 1931.64,\\n    \\\"count\\\": 4,\\n    \\\"percentage_of_expenses\\\": 6.4,\\n    \\\"by_category\\\": {\\n      \\\"Subscription\\\": 25.98,\\n      \\\"Utilities\\\": 85.00,\\n      \\\"Other\\\": 49.99\\n    }\\n  },\\n  \\\"insights\\\": [\\n    {\\n      \\\"type\\\": \\\"cost_analysis\\\",\\n      \\\"title\\\": \\\"Monthly Recurring Costs\\\",\\n      \\\"message\\\": \\\"You spend $160.97/month on recurring payments\\\",\\n      \\\"priority\\\": \\\"info\\\"\\n    }\\n  ],\\n  \\\"upcoming\\\": [\\n    {\\n      \\\"merchant\\\": \\\"Gym Membership\\\",\\n      \\\"amount\\\": 49.99,\\n      \\\"date\\\": \\\"2024-12-01\\\",\\n      \\\"days_until\\\": 3\\n    }\\n  ]\\n}\\n\\n**CRITICAL:** Return ONLY the JSON object. No additional text.\"\n        }\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "https://openrouter.ai/api/v1/chat/completions"
+					}
+				},
+				{
+					"name": "List Available Models",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{openRouterKey}}"
+							}
+						],
+						"url": "https://openrouter.ai/api/v1/models"
+					}
+				}
+			]
+		}
+	]
+}
