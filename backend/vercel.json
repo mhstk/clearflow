@@ -7,8 +7,23 @@
   ],
   "routes": [
     {
+      "src": "/api/(.*)",
+      "methods": ["OPTIONS"],
+      "dest": "app/main.py",
+      "headers": {
+        "Access-Control-Allow-Origin": "https://clearflow-front.vercel.app",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Authorization, Content-Type",
+        "Access-Control-Allow-Credentials": "true"
+      }
+    },
+    {
       "src": "/(.*)",
-      "dest": "app/main.py"
+      "dest": "app/main.py",
+      "headers": {
+        "Access-Control-Allow-Origin": "https://clearflow-front.vercel.app",
+        "Access-Control-Allow-Credentials": "true"
+      }
     }
   ]
 }
