@@ -66,7 +66,7 @@ export const TopBar = ({ title, subtitle, onMenuClick, showActions = true, onFil
           )}
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900 truncate">
-              {title || `${getGreeting()}, Moe!`}
+              {title || `${getGreeting()}, ${user?.name?.split(' ')[0] || 'there'}!`}
             </h1>
             <p className="text-xs sm:text-sm text-gray-500 mt-1 hidden sm:block">
               {subtitle || "Here's an overview of your financial health and recent activity."}
