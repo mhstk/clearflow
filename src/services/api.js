@@ -181,6 +181,13 @@ export const transactionsAPI = {
    */
   updateTransaction: (transactionId, updates) =>
     apiClient.patch(`/api/v1/transactions/${transactionId}`, updates),
+
+  /**
+   * Delete multiple transactions
+   * @param {number[]} transactionIds - Array of transaction IDs to delete
+   */
+  deleteBatch: (transactionIds) =>
+    apiClient.delete('/api/v1/transactions/batch', { data: transactionIds }),
 };
 
 /**

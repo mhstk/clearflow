@@ -1,17 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Badge, getCategoryBadgeVariant } from './Badge';
 import { Button } from './Button';
-import { Sparkles, X, ChevronDown, Brain, Edit2, Check, XCircle } from 'lucide-react';
+import { Sparkles, X, ChevronDown, Brain, Edit2, Check, XCircle, Trash2, Loader } from 'lucide-react';
+import { aiAPI, transactionsAPI } from '../services/api';
 
 /**
  * TransactionsTable component with row selection and inline actions
  */
-export const TransactionsTable = ({ transactions, categories = [], onCategoryUpdate, onTransactionUpdate }) => {
+export const TransactionsTable = ({ transactions, categories = [], onCategoryUpdate, onTransactionUpdate, onTransactionsDeleted }) => {
   const [selectedTransactions, setSelectedTransactions] = useState([]);
   const [expandedRow, setExpandedRow] = useState(null);
   const [editingCategory, setEditingCategory] = useState(null);
   const [editingNote, setEditingNote] = useState(null);
   const [noteValue, setNoteValue] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const dropdownRef = useRef(null);
   const noteInputRef = useRef(null);
 
@@ -79,13 +82,65 @@ export const TransactionsTable = ({ transactions, categories = [], onCategoryUpd
     setNoteValue('');
   };
 
-  const handleAIAnalyze = (e, transactionId) => {
+  const handleAIAnalyze = async (e, transactionId) => {
     e.stopPropagation();
-    alert(`AI analyze feature for transaction ${transactionId} coming soon!`);
+    setIsAnalyzing(true);
+    try {
+      await aiAPI.categorizeBatch([transactionId], true);
+      // Trigger refresh of transactions
+      if (onTransactionsDeleted) onTransactionsDeleted();
+    } catch (err) {
+      console.error('Failed to analyze transaction:', err);
+      alert('Failed to analyze transaction. Please try again.');
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
-  const handleBatchAIAnalyze = () => {
-    alert(`AI analyze feature for ${selectedTransactions.length} selected transactions coming soon!`);
+  const handleBatchAIAnalyze = async () => {
+    if (selectedTransactions.length === 0) return;
+    setIsAnalyzing(true);
+    try {
+      await aiAPI.categorizeBatch(selectedTransactions, true);
+      setSelectedTransactions([]);
+      // Trigger refresh of transactions
+      if (onTransactionsDeleted) onTransactionsDeleted();
+    } catch (err) {
+      console.error('Failed to analyze transactions:', err);
+      alert('Failed to analyze transactions. Please try again.');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedTransactions.length === 0) return;
+
+    const confirmMsg = `Are you sure you want to delete ${selectedTransactions.length} transaction${selectedTransactions.length > 1 ? 's' : ''}? This action cannot be undone.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsDeleting(true);
+    try {
+      await transactionsAPI.deleteBatch(selectedTransactions);
+      setSelectedTransactions([]);
+      // Trigger refresh of transactions
+      if (onTransactionsDeleted) onTransactionsDeleted();
+    } catch (err) {
+      console.error('Failed to delete transactions:', err);
+      alert('Failed to delete transactions. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (selectedTransactions.length === transactions.length) {
+      // Deselect all
+      setSelectedTransactions([]);
+    } else {
+      // Select all
+      setSelectedTransactions(transactions.map(t => t.id));
+    }
   };
 
   const handleEditTransaction = (e, transactionId) => {
@@ -130,6 +185,8 @@ export const TransactionsTable = ({ transactions, categories = [], onCategoryUpd
     );
   }
 
+  const isAllSelected = transactions.length > 0 && selectedTransactions.length === transactions.length;
+
   return (
     <div className="space-y-4">
       {/* Batch Action Toolbar - Always visible */}
@@ -148,23 +205,42 @@ export const TransactionsTable = ({ transactions, categories = [], onCategoryUpd
                 <Button
                   variant="primary"
                   size="sm"
-                  icon={<Brain size={14} />}
+                  icon={isAnalyzing ? <Loader size={14} className="animate-spin" /> : <Brain size={14} />}
                   onClick={handleBatchAIAnalyze}
+                  disabled={isAnalyzing || isDeleting}
                 >
-                  AI Analyze Selected
+                  {isAnalyzing ? 'Analyzing...' : 'AI Analyze'}
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  icon={isDeleting ? <Loader size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                  onClick={handleBatchDelete}
+                  disabled={isAnalyzing || isDeleting}
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete'}
                 </Button>
                 <button
                   onClick={handleClearSelection}
                   className="text-sm text-primary-700 hover:text-primary-900 font-medium"
+                  disabled={isAnalyzing || isDeleting}
                 >
-                  Clear Selection
+                  Clear
                 </button>
               </div>
             </>
           ) : (
-            <span className="text-sm text-gray-500">
-              Please select a transaction
-            </span>
+            <div className="flex items-center justify-between w-full">
+              <span className="text-sm text-gray-500">
+                Select transactions to perform actions
+              </span>
+              <button
+                onClick={handleSelectAll}
+                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+              >
+                Select All ({transactions.length})
+              </button>
+            </div>
           )}
         </div>
       </div>

@@ -538,6 +538,51 @@ export const TransactionsPage = ({ filters: propFilters, categories: propCategor
           categories={categories}
           onCategoryUpdate={handleCategoryUpdate}
           onTransactionUpdate={handleTransactionUpdate}
+          onTransactionsDeleted={() => {
+            // Refetch transactions after deletion or analysis
+            const fetchTransactions = async () => {
+              setIsLoading(true);
+              try {
+                const params = {
+                  page: 1,
+                  page_size: 1000,
+                };
+                if (filters.startDate || filters.endDate) {
+                  if (filters.startDate) params.start_date = filters.startDate;
+                  if (filters.endDate) params.end_date = filters.endDate;
+                } else {
+                  params.date_range = filters.dateRange;
+                }
+                if (filters.categories.length > 0) params.category = filters.categories;
+                if (filters.merchant) params.merchant_query = filters.merchant;
+
+                const response = await transactionsAPI.getView(params);
+                const data = response.data;
+                let transformedTransactions = data.rows.map(transformTransaction);
+
+                const transactionType = filters.transactionType || 'all';
+                transformedTransactions = transformedTransactions.filter(t => {
+                  if (transactionType === 'expenses' && t.amount >= 0) return false;
+                  if (transactionType === 'income' && t.amount < 0) return false;
+                  if (transactionType === 'all' && (filters.amountMin || filters.amountMax)) {
+                    const absAmount = Math.abs(t.amount);
+                    const minAmount = filters.amountMin ? parseFloat(filters.amountMin) : 0;
+                    const maxAmount = filters.amountMax ? parseFloat(filters.amountMax) : Infinity;
+                    if (absAmount < minAmount || absAmount > maxAmount) return false;
+                  }
+                  return true;
+                });
+
+                setTransactions(transformedTransactions);
+                setAggregates(data.aggregates);
+              } catch (err) {
+                setError(err.response?.data?.detail || 'Failed to reload transactions');
+              } finally {
+                setIsLoading(false);
+              }
+            };
+            fetchTransactions();
+          }}
         />
       )}
 

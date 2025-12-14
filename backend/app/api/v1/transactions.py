@@ -544,6 +544,32 @@ def get_transaction(
     return transaction
 
 
+@router.delete("/batch")
+def delete_transactions_batch(
+    transaction_ids: List[int],
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    """
+    Delete multiple transactions by IDs.
+
+    Only deletes transactions that belong to the authenticated user.
+    Returns count of deleted transactions.
+    """
+    if not transaction_ids:
+        raise HTTPException(status_code=400, detail="No transaction IDs provided")
+
+    # Delete only transactions belonging to this user
+    deleted_count = db.query(Transaction).filter(
+        Transaction.id.in_(transaction_ids),
+        Transaction.user_id == user_id
+    ).delete(synchronize_session=False)
+
+    db.commit()
+
+    return {"deleted_count": deleted_count}
+
+
 @router.get("/categories/list", response_model=List[CategoryResponse])
 def get_categories(
     db: Session = Depends(get_db),
