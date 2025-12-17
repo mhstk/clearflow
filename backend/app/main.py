@@ -8,7 +8,7 @@ from app.core.config import settings
 from app.core.logging_config import setup_logging
 from app.db.session import engine, SessionLocal
 from app.db.base import Base
-from app.api.v1 import accounts, transactions, ai, dashboard, recurring, auth
+from app.api.v1 import accounts, transactions, ai, dashboard, recurring, auth, categories
 from app.models.user import User
 
 # Setup logging first
@@ -142,6 +142,11 @@ app.include_router(
     auth.router,
     prefix=f"{settings.API_V1_PREFIX}/auth",
     tags=["authentication"]
+)
+app.include_router(
+    categories.router,
+    prefix=f"{settings.API_V1_PREFIX}/categories",
+    tags=["categories"]
 )
 
 

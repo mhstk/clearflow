@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Receipt, Repeat, Upload, Settings, Users, CreditCard, Mail, Shield } from 'lucide-react';
+import { LayoutDashboard, Receipt, Repeat, Upload, Settings, Users, CreditCard, Mail, Shield, Tags } from 'lucide-react';
 import logo512 from '../resources/logo/512.png';
 
 /**
@@ -11,6 +11,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
     { path: '/', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/transactions', label: 'Transactions', icon: Receipt },
     { path: '/recurring', label: 'Recurring', icon: Repeat },
+    { path: '/categories', label: 'Categories', icon: Tags },
     // { path: '/cards', label: 'Cards', icon: CreditCard },
     { path: '/upload', label: 'Upload', icon: Upload },
     // { path: '/users', label: 'Users', icon: Users },

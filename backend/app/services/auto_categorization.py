@@ -16,23 +16,9 @@ from app.prompts.categorization import (
     get_batch_categorization_prompt,
     get_single_categorization_prompt
 )
+from app.services.categorization import get_user_categories
 
 logger = logging.getLogger(__name__)
-
-
-# Valid categories - will be configurable in the future
-VALID_CATEGORIES = [
-    "Groceries",
-    "Rent",
-    "Transport",
-    "Eating Out",
-    "Shopping",
-    "Subscription",
-    "Utilities",
-    "Income",
-    "Other",
-    "Uncategorized"
-]
 
 
 def get_openai_client() -> Optional[OpenAI]:
@@ -65,6 +51,9 @@ async def categorize_transactions_batch(
     Returns:
         Dict with results for each transaction
     """
+    # Get user's custom categories
+    valid_categories = get_user_categories(db, user_id)
+
     # Get transactions
     transactions = db.query(Transaction).filter(
         Transaction.id.in_(transaction_ids),
@@ -158,7 +147,7 @@ async def categorize_transactions_batch(
 
     # Get AI categorization
     try:
-        ai_results = await _call_ai_for_categorization(client, txn_data)
+        ai_results = await _call_ai_for_categorization(client, txn_data, valid_categories)
 
         # Process AI results
         ai_categorization_results = []
@@ -171,9 +160,9 @@ async def categorize_transactions_batch(
             note = ai_result.get("note", "")
             confidence = ai_result.get("confidence", "medium")
 
-            # Validate category
-            if category not in VALID_CATEGORIES:
-                category = "Uncategorized"
+            # Validate category against user's categories
+            if category not in valid_categories:
+                category = "Other"
 
             # Find transaction
             txn = next((t for t in uncached_transactions if t.id == txn_id), None)
@@ -273,7 +262,8 @@ async def categorize_transactions_batch(
 
 async def _call_ai_for_categorization(
     client: OpenAI,
-    transactions: List[Dict]
+    transactions: List[Dict],
+    categories: List[str]
 ) -> List[Dict]:
     """
     Call OpenRouter API to categorize transactions.
@@ -281,12 +271,13 @@ async def _call_ai_for_categorization(
     Args:
         client: OpenAI client
         transactions: List of transaction dicts
+        categories: List of valid category names for the user
 
     Returns:
         List of categorization results
     """
-    # Generate prompt
-    prompt = get_batch_categorization_prompt(transactions, VALID_CATEGORIES)
+    # Generate prompt with user's categories
+    prompt = get_batch_categorization_prompt(transactions, categories)
 
     # Call API
     response = client.chat.completions.create(
@@ -364,6 +355,6 @@ async def categorize_single_transaction(
         }
 
 
-def get_valid_categories() -> List[str]:
-    """Get list of valid categories."""
-    return VALID_CATEGORIES.copy()
+def get_valid_categories(db: Session, user_id: int) -> List[str]:
+    """Get list of valid categories for a user."""
+    return get_user_categories(db, user_id)

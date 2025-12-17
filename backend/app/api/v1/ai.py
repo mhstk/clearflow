@@ -208,11 +208,14 @@ async def get_insights(
 
 
 @router.get("/categories")
-def get_available_categories():
+def get_available_categories(
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
     """
     Get list of valid categories that can be assigned to transactions.
 
-    Returns the complete list of categories that:
+    Returns the user's custom categories that:
     - Can be manually assigned by users
     - Are recognized by the AI categorization system
     - Are validated when transactions are categorized
@@ -222,23 +225,10 @@ def get_available_categories():
     - Validate user input
     - Show available options in the UI
 
-    Example Response:
-    ```json
-    [
-      "Groceries",
-      "Rent",
-      "Transport",
-      "Eating Out",
-      "Shopping",
-      "Subscription",
-      "Utilities",
-      "Income",
-      "Other",
-      "Uncategorized"
-    ]
-    ```
+    Note: Each user has their own custom category list.
+    New users get default categories automatically.
     """
-    return get_valid_categories()
+    return get_valid_categories(db, user_id)
 
 
 @router.post("/categorize_batch", response_model=BatchCategorizationResponse)

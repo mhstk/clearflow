@@ -15,7 +15,7 @@ import {
   Tooltip,
   ResponsiveContainer
 } from 'recharts';
-import { transactionsAPI, aiAPI, transformTransaction } from '../services/api';
+import { transactionsAPI, categoriesAPI, transformTransaction } from '../services/api';
 
 /**
  * Transactions page with filtering and Excel-like behavior
@@ -50,11 +50,22 @@ export const TransactionsPage = ({ filters: propFilters, categories: propCategor
 
     const fetchCategories = async () => {
       try {
-        const response = await aiAPI.getCategories();
-        setLocalCategories(response.data);
+        // Fetch categories with colors from the categories API
+        const response = await categoriesAPI.getAll();
+        setLocalCategories(response.data.categories || []);
       } catch (err) {
-        // Set default categories if API fails
-        setLocalCategories(['Groceries', 'Rent', 'Transport', 'Eating Out', 'Shopping', 'Subscription', 'Utilities', 'Income', 'Other', 'Uncategorized']);
+        // Set default categories with colors if API fails
+        setLocalCategories([
+          { name: 'Groceries', color: '#22c55e' },
+          { name: 'Rent', color: '#ef4444' },
+          { name: 'Transport', color: '#f59e0b' },
+          { name: 'Eating Out', color: '#3b82f6' },
+          { name: 'Shopping', color: '#8b5cf6' },
+          { name: 'Subscription', color: '#ec4899' },
+          { name: 'Utilities', color: '#6366f1' },
+          { name: 'Income', color: '#10b981' },
+          { name: 'Other', color: '#6b7280' },
+        ]);
       }
     };
 
@@ -279,18 +290,29 @@ export const TransactionsPage = ({ filters: propFilters, categories: propCategor
     document.body.removeChild(link);
   };
 
+  // Helper to get category color from categories array
+  const getCategoryColor = (categoryName) => {
+    const cat = categories.find(c =>
+      (typeof c === 'string' ? c : c.name) === categoryName
+    );
+    if (cat && typeof cat !== 'string' && cat.color) {
+      return cat.color;
+    }
+    // Fallback colors for unknown categories
+    const fallbackColors = ['#14b8a6', '#0d9488', '#f97316', '#8b5cf6', '#ea580c', '#ec4899', '#06b6d4', '#0f766e'];
+    const hash = categoryName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return fallbackColors[hash % fallbackColors.length];
+  };
+
   // Process aggregates for charts (expenses only, exclude income)
   const categoryBreakdown = aggregates?.by_category
     ? Object.entries(aggregates.by_category)
         .filter(([name, value]) => name !== 'Income' && value < 0) // Only expenses
-        .map(([name, value], index) => {
-          const colors = ['#14b8a6', '#0d9488', '#f97316', '#8b5cf6', '#ea580c', '#ec4899', '#06b6d4', '#0f766e'];
-          return {
-            name,
-            value: Math.abs(value),
-            color: colors[index % colors.length]
-          };
-        })
+        .map(([name, value]) => ({
+          name,
+          value: Math.abs(value),
+          color: getCategoryColor(name)
+        }))
     : [];
 
   const dailySpending = aggregates?.by_day

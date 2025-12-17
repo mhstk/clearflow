@@ -5,6 +5,7 @@ from app.models.transaction import Transaction
 from app.models.merchant_cache import MerchantCache
 from app.models.recurring_cache import RecurringCache
 from app.models.recurring_insights import RecurringInsights
+from app.models.user_category import UserCategory
 
 # Import all models here so Alembic can see them
-__all__ = ["Base", "User", "Account", "Transaction", "MerchantCache", "RecurringCache", "RecurringInsights"]
+__all__ = ["Base", "User", "Account", "Transaction", "MerchantCache", "RecurringCache", "RecurringInsights", "UserCategory"]

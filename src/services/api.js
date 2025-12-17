@@ -278,6 +278,49 @@ export const recurringAPI = {
 };
 
 /**
+ * Categories API
+ */
+export const categoriesAPI = {
+  /**
+   * Get all user categories
+   */
+  getAll: () => apiClient.get('/api/v1/categories'),
+
+  /**
+   * Create a new category
+   * @param {Object} data - Category data
+   * @param {string} data.name - Category name
+   * @param {string} data.color - Hex color (#RRGGBB)
+   * @param {string} data.icon - Optional icon name
+   */
+  create: (data) => apiClient.post('/api/v1/categories', data),
+
+  /**
+   * Update a category
+   * @param {number} categoryId - Category ID
+   * @param {Object} data - Category updates
+   */
+  update: (categoryId, data) => apiClient.put(`/api/v1/categories/${categoryId}`, data),
+
+  /**
+   * Delete a category
+   * @param {number} categoryId - Category ID
+   */
+  delete: (categoryId) => apiClient.delete(`/api/v1/categories/${categoryId}`),
+
+  /**
+   * Reorder categories
+   * @param {number[]} categoryIds - Array of category IDs in desired order
+   */
+  reorder: (categoryIds) => apiClient.post('/api/v1/categories/reorder', { category_ids: categoryIds }),
+
+  /**
+   * Reset categories to defaults
+   */
+  reset: () => apiClient.post('/api/v1/categories/reset'),
+};
+
+/**
  * Utility functions
  */
 

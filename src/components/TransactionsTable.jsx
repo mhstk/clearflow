@@ -18,6 +18,17 @@ export const TransactionsTable = ({ transactions, categories = [], onCategoryUpd
   const dropdownRef = useRef(null);
   const noteInputRef = useRef(null);
 
+  // Helper to get category color from categories array
+  const getCategoryColor = (categoryName) => {
+    const cat = categories.find(c =>
+      (typeof c === 'string' ? c : c.name) === categoryName
+    );
+    if (cat && typeof cat !== 'string' && cat.color) {
+      return cat.color;
+    }
+    return null; // Will fall back to variant-based styling
+  };
+
   const handleRowClick = (transactionId) => {
     setSelectedTransactions(prev => {
       if (prev.includes(transactionId)) {
@@ -337,7 +348,10 @@ export const TransactionsTable = ({ transactions, categories = [], onCategoryUpd
                         onClick={(e) => handleCategoryClick(e, transaction.id)}
                         className="inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity"
                       >
-                        <Badge variant={getCategoryBadgeVariant(transaction.category)}>
+                        <Badge
+                          variant={getCategoryBadgeVariant(transaction.category)}
+                          color={getCategoryColor(transaction.category)}
+                        >
                           <span className="flex items-center gap-1">
                             {transaction.category}
                             <ChevronDown size={12} className={`transition-transform ${editingCategory === transaction.id ? 'rotate-180' : ''}`} />
@@ -350,17 +364,26 @@ export const TransactionsTable = ({ transactions, categories = [], onCategoryUpd
                           className="absolute z-50 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 max-h-60 overflow-y-auto flex flex-col"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {categories.map(cat => (
-                            <button
-                              key={cat}
-                              onClick={() => handleCategorySelect(transaction.id, cat)}
-                              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors flex-shrink-0 ${
-                                cat === transaction.category ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-700'
-                              }`}
-                            >
-                              {cat}
-                            </button>
-                          ))}
+                          {categories.map(cat => {
+                            // Support both object format (with color) and string format (legacy)
+                            const categoryName = typeof cat === 'string' ? cat : cat.name;
+                            const categoryColor = typeof cat === 'string' ? '#6b7280' : (cat.color || '#6b7280');
+                            return (
+                              <button
+                                key={categoryName}
+                                onClick={() => handleCategorySelect(transaction.id, categoryName)}
+                                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors flex-shrink-0 flex items-center gap-2 ${
+                                  categoryName === transaction.category ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-700'
+                                }`}
+                              >
+                                <span
+                                  className="w-3 h-3 rounded-full flex-shrink-0"
+                                  style={{ backgroundColor: categoryColor }}
+                                />
+                                {categoryName}
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -495,7 +518,11 @@ export const TransactionsTable = ({ transactions, categories = [], onCategoryUpd
                     onClick={(e) => handleCategoryClick(e, transaction.id)}
                     className="inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity"
                   >
-                    <Badge variant={getCategoryBadgeVariant(transaction.category)} size="sm">
+                    <Badge
+                      variant={getCategoryBadgeVariant(transaction.category)}
+                      color={getCategoryColor(transaction.category)}
+                      size="sm"
+                    >
                       <span className="flex items-center gap-1">
                         {transaction.category}
                         <ChevronDown size={10} className={`transition-transform ${editingCategory === transaction.id ? 'rotate-180' : ''}`} />
@@ -508,17 +535,26 @@ export const TransactionsTable = ({ transactions, categories = [], onCategoryUpd
                       className="absolute right-0 z-50 mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 py-1 max-h-48 overflow-y-auto flex flex-col"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {categories.map(cat => (
-                        <button
-                          key={cat}
-                          onClick={() => handleCategorySelect(transaction.id, cat)}
-                          className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors flex-shrink-0 ${
-                            cat === transaction.category ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-700'
-                          }`}
-                        >
-                          {cat}
-                        </button>
-                      ))}
+                      {categories.map(cat => {
+                        // Support both object format (with color) and string format (legacy)
+                        const categoryName = typeof cat === 'string' ? cat : cat.name;
+                        const categoryColor = typeof cat === 'string' ? '#6b7280' : (cat.color || '#6b7280');
+                        return (
+                          <button
+                            key={categoryName}
+                            onClick={() => handleCategorySelect(transaction.id, categoryName)}
+                            className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors flex-shrink-0 flex items-center gap-2 ${
+                              categoryName === transaction.category ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-700'
+                            }`}
+                          >
+                            <span
+                              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: categoryColor }}
+                            />
+                            {categoryName}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -652,7 +688,10 @@ const TransactionDetails = ({ transaction, onClose, onUpdate }) => {
         <label className="block text-xs font-medium text-gray-500 mb-1">
           Category
         </label>
-        <Badge variant={getCategoryBadgeVariant(transaction.category)}>
+        <Badge
+          variant={getCategoryBadgeVariant(transaction.category)}
+          color={getCategoryColor(transaction.category)}
+        >
           {transaction.category}
         </Badge>
       </div>

@@ -248,17 +248,26 @@ export const FilterPanel = ({
             Categories
           </label>
           <div className="space-y-2.5">
-            {categories.map(category => (
-              <label key={category} className="flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={filters.categories.includes(category)}
-                  onChange={() => handleCategoryToggle(category)}
-                  className="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500"
-                />
-                <span className="ml-3 text-sm text-gray-700">{category}</span>
-              </label>
-            ))}
+            {categories.map(cat => {
+              // Support both object format (with color) and string format (legacy)
+              const categoryName = typeof cat === 'string' ? cat : cat.name;
+              const categoryColor = typeof cat === 'string' ? '#6b7280' : (cat.color || '#6b7280');
+              return (
+                <label key={categoryName} className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.categories.includes(categoryName)}
+                    onChange={() => handleCategoryToggle(categoryName)}
+                    className="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500"
+                  />
+                  <span
+                    className="ml-2 w-3 h-3 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: categoryColor }}
+                  />
+                  <span className="ml-2 text-sm text-gray-700">{categoryName}</span>
+                </label>
+              );
+            })}
           </div>
         </div>
 

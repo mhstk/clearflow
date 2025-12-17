@@ -1,25 +1,29 @@
 import httpx
 import json
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 from sqlalchemy.orm import Session
 from datetime import datetime
 
 from app.core.config import settings
 from app.models.merchant_cache import MerchantCache
 from app.models.transaction import Transaction
+from app.models.user_category import UserCategory, DEFAULT_USER_CATEGORIES
 
 
-VALID_CATEGORIES = [
-    "Groceries",
-    "Rent",
-    "Transport",
-    "Eating Out",
-    "Shopping",
-    "Subscription",
-    "Utilities",
-    "Income",
-    "Other"
-]
+def get_user_categories(db: Session, user_id: int) -> List[str]:
+    """
+    Get list of category names for a user.
+    If user has no categories, returns default category names.
+    """
+    categories = db.query(UserCategory).filter(
+        UserCategory.user_id == user_id
+    ).order_by(UserCategory.sort_order).all()
+
+    if categories:
+        return [cat.name for cat in categories]
+
+    # Return default names if user has no categories yet
+    return [cat["name"] for cat in DEFAULT_USER_CATEGORIES]
 
 
 async def categorize_merchant_with_ai(
@@ -32,7 +36,11 @@ async def categorize_merchant_with_ai(
     Categorize a merchant using AI (OpenRouter).
 
     Returns cached result if available, otherwise calls LLM.
+    Uses user's custom categories for categorization.
     """
+    # Get user's categories
+    user_categories = get_user_categories(db, user_id)
+
     # Check cache first
     cache_entry = db.query(MerchantCache).filter(
         MerchantCache.user_id == user_id,
@@ -57,7 +65,7 @@ async def categorize_merchant_with_ai(
         return _get_stub_categorization(merchant_key)
 
     try:
-        result = await _call_openrouter(merchant_key, sample_descriptions)
+        result = await _call_openrouter(merchant_key, sample_descriptions, user_categories)
 
         # Save to cache
         cache_entry = MerchantCache(
@@ -91,14 +99,18 @@ async def categorize_merchant_with_ai(
         return _get_stub_categorization(merchant_key)
 
 
-async def _call_openrouter(merchant_key: str, sample_descriptions: list[str]) -> Dict[str, str]:
-    """Call OpenRouter API for categorization."""
+async def _call_openrouter(
+    merchant_key: str,
+    sample_descriptions: list[str],
+    categories: List[str]
+) -> Dict[str, str]:
+    """Call OpenRouter API for categorization using user's custom categories."""
 
     prompt = f"""You are helping categorize financial transactions.
 You will receive several raw transaction descriptions from a bank statement.
 
 Choose one high-level category from this list:
-{', '.join(VALID_CATEGORIES)}
+{', '.join(categories)}
 
 Sample descriptions for merchant "{merchant_key}":
 {chr(10).join(f"- {desc}" for desc in sample_descriptions)}
@@ -135,8 +147,8 @@ Example: {{"category": "Eating Out", "note": "Lunch - McDonald's", "explanation"
         # Parse JSON from response
         parsed = json.loads(content)
 
-        # Validate category
-        if parsed["category"] not in VALID_CATEGORIES:
+        # Validate category against user's categories
+        if parsed["category"] not in categories:
             parsed["category"] = "Other"
 
         return parsed

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
@@ -9,12 +9,14 @@ import { DashboardPage } from './pages/DashboardPage';
 import { TransactionsPage } from './pages/TransactionsPage';
 import { UploadPage } from './pages/UploadPage';
 import { RecurringPage } from './pages/RecurringPage';
+import { CategoriesPage } from './pages/CategoriesPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { CardsPage } from './pages/CardsPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { GoogleCallback } from './pages/GoogleCallback';
+import { categoriesAPI } from './services/api';
 
 /**
  * Layout component that handles filter panel visibility based on route
@@ -35,7 +37,36 @@ const AppLayout = ({ children, isSidebarOpen, setIsSidebarOpen }) => {
     amountMax: ''
   });
 
-  const [categories] = useState(['Groceries', 'Rent', 'Transport', 'Eating Out', 'Shopping', 'Subscription', 'Utilities', 'Income', 'Other', 'Uncategorized']);
+  // Fetch user categories with colors from API
+  const [categories, setCategories] = useState([]);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await categoriesAPI.getAll();
+        // Categories are objects: { id, name, color, ... }
+        setCategories(response.data.categories || []);
+      } catch (err) {
+        // Fallback to default category names if API fails
+        setCategories([
+          { name: 'Groceries', color: '#22c55e' },
+          { name: 'Rent', color: '#ef4444' },
+          { name: 'Transport', color: '#f59e0b' },
+          { name: 'Eating Out', color: '#3b82f6' },
+          { name: 'Shopping', color: '#8b5cf6' },
+          { name: 'Subscription', color: '#ec4899' },
+          { name: 'Utilities', color: '#6366f1' },
+          { name: 'Income', color: '#10b981' },
+          { name: 'Other', color: '#6b7280' },
+        ]);
+      }
+    };
+
+    if (user) {
+      fetchCategories();
+    }
+  }, [user]);
 
   const handleResetFilters = () => {
     setFilters({
@@ -149,6 +180,13 @@ function App() {
             <ProtectedRoute>
               <AppLayout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
                 <RecurringPage />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/categories" element={
+            <ProtectedRoute>
+              <AppLayout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
+                <CategoriesPage />
               </AppLayout>
             </ProtectedRoute>
           } />

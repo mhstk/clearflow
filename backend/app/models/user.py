@@ -32,3 +32,4 @@ class User(Base):
     merchant_caches = relationship("MerchantCache", back_populates="user", cascade="all, delete-orphan")
     recurring_caches = relationship("RecurringCache", back_populates="user", cascade="all, delete-orphan")
     recurring_insights = relationship("RecurringInsights", back_populates="user", cascade="all, delete-orphan", uselist=False)
+    categories = relationship("UserCategory", back_populates="user", cascade="all, delete-orphan")
