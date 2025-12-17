@@ -29,7 +29,8 @@ from app.schemas.transaction import (
     RecurringTransaction,
     RecurringTransactionsResponse
 )
-from app.services.csv_import import parse_rbc_csv
+from app.services.csv_import import parse_rbc_csv, parse_csv_universal
+from app.services.csv_format_detector import detect_csv_format
 from app.services.auto_categorization import categorize_transactions_batch
 from app.core.logging_config import get_categorization_logger
 
@@ -169,8 +170,12 @@ async def upload_csv(
     """
     Upload and parse CSV file containing transactions.
 
+    Supports multiple bank formats (RBC, Scotiabank, TD, etc.) through AI-powered
+    format detection. The system analyzes the CSV structure and automatically
+    identifies columns for date, amount, description, etc.
+
     Parameters:
-    - file: CSV file to upload
+    - file: CSV file to upload (any Canadian bank format)
     - account_id: Optional account ID to associate transactions with
     - auto_categorize: Whether to automatically categorize transactions with AI (default: False)
 
@@ -186,11 +191,28 @@ async def upload_csv(
     # Read file content
     content = await file.read()
 
-    # Parse CSV
+    # Parse CSV using AI format detection
     try:
-        inserted, skipped, final_account_id = parse_rbc_csv(
-            content, db, user_id, account_id
-        )
+        # Step 1: Detect CSV format using AI
+        logger.info(f"📄 Detecting CSV format for file: {file.filename}")
+        format_config = await detect_csv_format(content)
+        logger.info(f"📊 Detected format: date_column={format_config.get('date_column')}, "
+                   f"amount_column={format_config.get('amount_column')}, "
+                   f"amount_is_absolute={format_config.get('amount_is_absolute')}")
+
+        # Step 2: Try universal parser with detected format
+        try:
+            inserted, skipped, final_account_id = parse_csv_universal(
+                content, format_config, db, user_id, account_id
+            )
+            logger.info(f"✅ Universal parser succeeded: {inserted} inserted, {skipped} skipped")
+        except Exception as parse_error:
+            # Step 3: Fallback to RBC parser if universal parser fails
+            logger.warning(f"⚠️ Universal parser failed: {parse_error}. Trying RBC parser...")
+            inserted, skipped, final_account_id = parse_rbc_csv(
+                content, db, user_id, account_id
+            )
+            logger.info(f"✅ RBC parser fallback succeeded: {inserted} inserted, {skipped} skipped")
 
         # Auto-categorize if requested (in background)
         if auto_categorize and inserted > 0:
