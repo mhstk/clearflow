@@ -133,6 +133,7 @@ const AppLayout = ({ children, isSidebarOpen, setIsSidebarOpen }) => {
           onMenuClick={() => setIsSidebarOpen(true)}
           onFilterClick={showFilterPanel ? () => setIsFilterOpen(!isFilterOpen) : null}
           showFilterButton={showFilterPanel}
+          categories={categories}
         />
 
         {/* Page Content */}

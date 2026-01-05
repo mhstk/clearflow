@@ -7,7 +7,7 @@ import { AddTransactionModal } from './AddTransactionModal';
 /**
  * TopBar component matching reference design
  */
-export const TopBar = ({ title, subtitle, onMenuClick, showActions = true, onFilterClick, showFilterButton, onTransactionAdded }) => {
+export const TopBar = ({ title, subtitle, onMenuClick, showActions = true, onFilterClick, showFilterButton, onTransactionAdded, categories }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -162,6 +162,7 @@ export const TopBar = ({ title, subtitle, onMenuClick, showActions = true, onFil
             onTransactionAdded();
           }
         }}
+        categories={categories}
       />
     </div>
   );
