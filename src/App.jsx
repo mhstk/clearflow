@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation, useSearchParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Sidebar } from './components/Sidebar';
@@ -18,6 +18,43 @@ import { SignupPage } from './pages/SignupPage';
 import { GoogleCallback } from './pages/GoogleCallback';
 import { categoriesAPI } from './services/api';
 
+const DEFAULT_FILTERS = {
+  dateRange: 'this_month',
+  startDate: '',
+  endDate: '',
+  transactionType: 'all',
+  categories: [],
+  merchant: '',
+  amountMin: '',
+  amountMax: ''
+};
+
+// Serialize filters to URL query params, omitting defaults/empties for clean URLs.
+const filtersToSearchParams = (f) => {
+  const sp = new URLSearchParams();
+  if (f.dateRange && f.dateRange !== 'this_month') sp.set('dateRange', f.dateRange);
+  if (f.startDate) sp.set('startDate', f.startDate);
+  if (f.endDate) sp.set('endDate', f.endDate);
+  if (f.transactionType && f.transactionType !== 'all') sp.set('transactionType', f.transactionType);
+  (f.categories || []).forEach((c) => sp.append('category', c));
+  if (f.merchant) sp.set('merchant', f.merchant);
+  if (f.amountMin) sp.set('amountMin', f.amountMin);
+  if (f.amountMax) sp.set('amountMax', f.amountMax);
+  return sp;
+};
+
+// Parse filters back from URL query params, falling back to defaults.
+const searchParamsToFilters = (sp) => ({
+  dateRange: sp.get('dateRange') || 'this_month',
+  startDate: sp.get('startDate') || '',
+  endDate: sp.get('endDate') || '',
+  transactionType: sp.get('transactionType') || 'all',
+  categories: sp.getAll('category'),
+  merchant: sp.get('merchant') || '',
+  amountMin: sp.get('amountMin') || '',
+  amountMax: sp.get('amountMax') || ''
+});
+
 /**
  * Layout component that handles filter panel visibility based on route
  */
@@ -26,16 +63,21 @@ const AppLayout = ({ children, isSidebarOpen, setIsSidebarOpen }) => {
   const showFilterPanel = location.pathname === '/transactions';
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  const [filters, setFilters] = useState({
-    dateRange: 'this_month',
-    startDate: '',
-    endDate: '',
-    transactionType: 'all',
-    categories: [],
-    merchant: '',
-    amountMin: '',
-    amountMax: ''
-  });
+  // Filters are persisted in the URL query string so they survive a page refresh.
+  // A bare /transactions link (e.g. from the sidebar) has no query, so filters
+  // reset to defaults when navigating away and back.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchStr = searchParams.toString();
+  const filters = useMemo(
+    () => (showFilterPanel
+      ? searchParamsToFilters(new URLSearchParams(searchStr))
+      : DEFAULT_FILTERS),
+    [showFilterPanel, searchStr]
+  );
+  const setFilters = (next) => {
+    const updated = typeof next === 'function' ? next(filters) : next;
+    setSearchParams(filtersToSearchParams(updated), { replace: true });
+  };
 
   // Fetch user categories with colors from API
   const [categories, setCategories] = useState([]);
@@ -69,16 +111,7 @@ const AppLayout = ({ children, isSidebarOpen, setIsSidebarOpen }) => {
   }, [user]);
 
   const handleResetFilters = () => {
-    setFilters({
-      dateRange: 'this_month',
-      startDate: '',
-      endDate: '',
-      transactionType: 'all',
-      categories: [],
-      merchant: '',
-      amountMin: '',
-      amountMax: ''
-    });
+    setSearchParams(new URLSearchParams(), { replace: true });
   };
 
   return (

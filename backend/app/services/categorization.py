@@ -60,7 +60,7 @@ async def categorize_merchant_with_ai(
         }
 
     # Call LLM
-    if not settings.OPENROUTER_API_KEY:
+    if not settings.ai_api_key:
         # Return stub if no API key
         return _get_stub_categorization(merchant_key)
 
@@ -126,13 +126,13 @@ Example: {{"category": "Eating Out", "note": "Lunch - McDonald's", "explanation"
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post(
-            f"{settings.OPENROUTER_BASE_URL}/chat/completions",
+            f"{settings.ai_base_url}/chat/completions",
             headers={
-                "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
+                "Authorization": f"Bearer {settings.ai_api_key}",
                 "Content-Type": "application/json"
             },
             json={
-                "model": settings.OPENROUTER_MODEL,
+                "model": settings.ai_model,
                 "messages": [
                     {"role": "user", "content": prompt}
                 ],

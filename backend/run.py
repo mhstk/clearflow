@@ -6,9 +6,9 @@ Run this to start the development server.
 import uvicorn
 
 if __name__ == "__main__":
-    print("🚀 Starting Personal Finance Intelligence API...")
-    print("📚 API Documentation: http://localhost:8000/docs")
-    print("🔍 Health Check: http://localhost:8000/health")
+    print("Starting Personal Finance Intelligence API...")
+    print("API Documentation: http://localhost:8000/docs")
+    print("Health Check: http://localhost:8000/health")
     print("\n")
 
     uvicorn.run(

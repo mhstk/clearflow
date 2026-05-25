@@ -153,18 +153,14 @@ def parse_csv_universal(
 
     Returns: (inserted_count, skipped_count, account_id)
     """
-    # Read CSV with pandas
-    try:
-        df = pd.read_csv(BytesIO(file_content))
-    except Exception as e:
-        logger.error(f"Error reading CSV: {e}")
-        raise ValueError(f"Could not read CSV file: {e}")
-
     # Extract format config
+    has_header = format_config.get("has_header", True)
     date_column = format_config.get("date_column")
     date_format = format_config.get("date_format", "%Y-%m-%d")
     description_columns = format_config.get("description_columns", [])
     amount_column = format_config.get("amount_column")
+    debit_column = format_config.get("debit_column")
+    credit_column = format_config.get("credit_column")
     amount_is_absolute = format_config.get("amount_is_absolute", False)
     sign_column = format_config.get("sign_column")
     debit_indicators = [s.lower() for s in format_config.get("debit_indicators", [])]
@@ -173,10 +169,31 @@ def parse_csv_universal(
     account_type_column = format_config.get("account_type_column")
     account_number_column = format_config.get("account_number_column")
 
+    # Read CSV with pandas. Some banks (e.g. CIBC) export without a header row,
+    # in which case columns are referenced by 0-based integer position.
+    try:
+        df = pd.read_csv(BytesIO(file_content), header=0 if has_header else None)
+    except Exception as e:
+        logger.error(f"Error reading CSV: {e}")
+        raise ValueError(f"Could not read CSV file: {e}")
+
+    # For headerless files, column references are integer positions.
+    date_column = _resolve_col(date_column, has_header)
+    amount_column = _resolve_col(amount_column, has_header)
+    debit_column = _resolve_col(debit_column, has_header)
+    credit_column = _resolve_col(credit_column, has_header)
+    sign_column = _resolve_col(sign_column, has_header)
+    account_type_column = _resolve_col(account_type_column, has_header)
+    account_number_column = _resolve_col(account_number_column, has_header)
+    description_columns = [_resolve_col(c, has_header) for c in description_columns]
+
+    # Amount can come from a single signed column, or split debit/credit columns.
+    use_split_amount = debit_column is not None or credit_column is not None
+
     # Validate required columns exist
     if date_column not in df.columns:
         raise ValueError(f"Date column '{date_column}' not found in CSV")
-    if amount_column not in df.columns:
+    if not use_split_amount and (amount_column is None or amount_column not in df.columns):
         raise ValueError(f"Amount column '{amount_column}' not found in CSV")
 
     inserted_count = 0
@@ -208,29 +225,29 @@ def parse_csv_universal(
                     skipped_count += 1
                     continue
 
-            # Parse amount
-            amount_str = str(row[amount_column]).strip()
-            amount_str = amount_str.replace(',', '').replace('$', '').replace('"', '')
+            # Parse amount — either from split debit/credit columns or a single column
+            if use_split_amount:
+                debit_val = _parse_amount(row[debit_column]) if debit_column is not None else None
+                credit_val = _parse_amount(row[credit_column]) if credit_column is not None else None
+                if debit_val is None and credit_val is None:
+                    skipped_count += 1
+                    continue
+                # Debit = money out = expense (negative); credit = money in = income (positive)
+                amount = (credit_val or 0.0) - (debit_val or 0.0)
+            else:
+                amount = _parse_amount(row[amount_column])
+                if amount is None:
+                    skipped_count += 1
+                    continue
 
-            if not amount_str or amount_str.lower() == 'nan':
-                skipped_count += 1
-                continue
-
-            try:
-                amount = float(amount_str)
-            except ValueError:
-                logger.warning(f"Could not parse amount: {amount_str}")
-                skipped_count += 1
-                continue
-
-            # Handle amount sign based on format config
-            if amount_is_absolute and sign_column:
-                sign_value = str(row.get(sign_column, "")).strip().lower()
-                if sign_value in debit_indicators:
-                    amount = -abs(amount)  # Debit = expense = negative
-                elif sign_value in credit_indicators:
-                    amount = abs(amount)  # Credit = income = positive
-                # If sign_value not recognized, keep original
+                # Handle amount sign based on format config
+                if amount_is_absolute and sign_column is not None:
+                    sign_value = str(row.get(sign_column, "")).strip().lower()
+                    if sign_value in debit_indicators:
+                        amount = -abs(amount)  # Debit = expense = negative
+                    elif sign_value in credit_indicators:
+                        amount = abs(amount)  # Credit = income = positive
+                    # If sign_value not recognized, keep original
 
             # Build description from configured columns
             description_parts = []
@@ -332,6 +349,29 @@ def _get_or_create_account(
         db.refresh(account)
 
     return account.id
+
+
+def _resolve_col(ref, has_header):
+    """Resolve a column reference. For headerless CSVs, columns are integer positions."""
+    if ref is None:
+        return None
+    if has_header:
+        return ref
+    try:
+        return int(ref)
+    except (ValueError, TypeError):
+        return ref
+
+
+def _parse_amount(value):
+    """Parse a numeric amount from a cell, returning None if empty/invalid."""
+    s = str(value).strip().replace(',', '').replace('$', '').replace('"', '')
+    if not s or s.lower() == 'nan':
+        return None
+    try:
+        return float(s)
+    except ValueError:
+        return None
 
 
 def _parse_date_flexible(date_str: str):

@@ -15,7 +15,7 @@ export const TransactionsTable = ({ transactions, categories = [], onCategoryUpd
   const [noteValue, setNoteValue] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const dropdownRef = useRef(null);
+  const [analyzingIds, setAnalyzingIds] = useState([]); // transaction ids currently being AI-analyzed
   const noteInputRef = useRef(null);
 
   // Helper to get category color from categories array
@@ -39,10 +39,12 @@ export const TransactionsTable = ({ transactions, categories = [], onCategoryUpd
     });
   };
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside.
+  // Use a data-attribute (not a single ref) because the category cell is rendered
+  // twice (desktop table + mobile card); a shared ref would point at only one of them.
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      if (!event.target.closest('[data-category-dropdown]')) {
         setEditingCategory(null);
       }
     };
@@ -96,6 +98,7 @@ export const TransactionsTable = ({ transactions, categories = [], onCategoryUpd
   const handleAIAnalyze = async (e, transactionId) => {
     e.stopPropagation();
     setIsAnalyzing(true);
+    setAnalyzingIds([transactionId]);
     try {
       await aiAPI.categorizeBatch([transactionId], true);
       // Trigger refresh of transactions
@@ -105,12 +108,14 @@ export const TransactionsTable = ({ transactions, categories = [], onCategoryUpd
       alert('Failed to analyze transaction. Please try again.');
     } finally {
       setIsAnalyzing(false);
+      setAnalyzingIds([]);
     }
   };
 
   const handleBatchAIAnalyze = async () => {
     if (selectedTransactions.length === 0) return;
     setIsAnalyzing(true);
+    setAnalyzingIds(selectedTransactions);
     try {
       await aiAPI.categorizeBatch(selectedTransactions, true);
       setSelectedTransactions([]);
@@ -121,6 +126,7 @@ export const TransactionsTable = ({ transactions, categories = [], onCategoryUpd
       alert('Failed to analyze transactions. Please try again.');
     } finally {
       setIsAnalyzing(false);
+      setAnalyzingIds([]);
     }
   };
 
@@ -343,7 +349,13 @@ export const TransactionsTable = ({ transactions, categories = [], onCategoryUpd
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="relative inline-block" ref={editingCategory === transaction.id ? dropdownRef : null}>
+                    {analyzingIds.includes(transaction.id) ? (
+                      <span className="inline-flex items-center gap-1.5 text-sm text-gray-400">
+                        <Loader size={14} className="animate-spin" />
+                        Analyzing…
+                      </span>
+                    ) : (
+                    <div className="relative inline-block" data-category-dropdown>
                       <div
                         onClick={(e) => handleCategoryClick(e, transaction.id)}
                         className="inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity"
@@ -387,6 +399,7 @@ export const TransactionsTable = ({ transactions, categories = [], onCategoryUpd
                         </div>
                       )}
                     </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
                     {transaction.merchant}
@@ -420,6 +433,7 @@ export const TransactionsTable = ({ transactions, categories = [], onCategoryUpd
                         transaction={transaction}
                         onClose={() => setExpandedRow(null)}
                         onUpdate={onTransactionUpdate}
+                        getCategoryColor={getCategoryColor}
                       />
                     </td>
                   </tr>
@@ -513,7 +527,13 @@ export const TransactionsTable = ({ transactions, categories = [], onCategoryUpd
                     </button>
                   </div>
                 </div>
-                <div className="relative inline-block" ref={editingCategory === transaction.id ? dropdownRef : null}>
+                {analyzingIds.includes(transaction.id) ? (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-gray-400">
+                    <Loader size={12} className="animate-spin" />
+                    Analyzing…
+                  </span>
+                ) : (
+                <div className="relative inline-block" data-category-dropdown>
                   <div
                     onClick={(e) => handleCategoryClick(e, transaction.id)}
                     className="inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity"
@@ -558,6 +578,7 @@ export const TransactionsTable = ({ transactions, categories = [], onCategoryUpd
                     </div>
                   )}
                 </div>
+                )}
               </div>
             </div>
             {expandedRow === transaction.id && (
@@ -566,6 +587,7 @@ export const TransactionsTable = ({ transactions, categories = [], onCategoryUpd
                   transaction={transaction}
                   onClose={() => setExpandedRow(null)}
                   onUpdate={onTransactionUpdate}
+                  getCategoryColor={getCategoryColor}
                 />
               </div>
             )}
@@ -581,7 +603,7 @@ export const TransactionsTable = ({ transactions, categories = [], onCategoryUpd
 /**
  * Transaction details panel
  */
-const TransactionDetails = ({ transaction, onClose, onUpdate }) => {
+const TransactionDetails = ({ transaction, onClose, onUpdate, getCategoryColor }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedDate, setEditedDate] = useState(transaction.date);
   const [editedAmount, setEditedAmount] = useState(transaction.amount);
@@ -650,6 +672,7 @@ const TransactionDetails = ({ transaction, onClose, onUpdate }) => {
           ) : (
             <p className="text-sm font-medium text-gray-900">
               {(() => {
+                if (!transaction.date) return '—';
                 const [year, month, day] = transaction.date.split('-');
                 const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
                 return date.toLocaleDateString();

@@ -51,12 +51,12 @@ def calculate_monthly_amount(amount: float, frequency: str) -> float:
 
 def get_openai_client() -> Optional[OpenAI]:
     """Get OpenAI client configured for OpenRouter."""
-    if not settings.OPENROUTER_API_KEY:
+    if not settings.ai_api_key:
         return None
 
     return OpenAI(
-        base_url="https://openrouter.ai/api/v1",
-        api_key=settings.OPENROUTER_API_KEY,
+        base_url=settings.ai_base_url,
+        api_key=settings.ai_api_key,
     )
 
 
@@ -302,14 +302,14 @@ async def _call_ai_for_detection(
     prompt = get_batch_recurring_detection_prompt(merchants)
 
     response = client.chat.completions.create(
-        model=settings.OPENROUTER_MODEL,
+        model=settings.ai_model,
         messages=[
             {
                 "role": "user",
                 "content": prompt
             }
         ],
-        extra_body={"reasoning": {"enabled": True}}
+        extra_body=settings.ai_extra_body
     )
 
     content = response.choices[0].message.content

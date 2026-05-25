@@ -53,9 +53,9 @@ def get_batch_categorization_prompt(
 2. Consider both the merchant name AND the transaction amount
 3. Use "Income" for positive amounts (deposits, paychecks, refunds)
 4. Use "Other" if you're uncertain about the category
-5. For each transaction, provide:
-   - category: One of the available categories
-   - note: A short, user-friendly description (max 40 characters)
+5. For each transaction, FIRST write the note, THEN pick the category that matches it:
+   - note: A short, user-friendly description of what the merchant is (max 40 characters)
+   - category: One of the available categories — must be consistent with the note
    - confidence: "high", "medium", or "low"
 
 **Transactions to Categorize:**
@@ -66,6 +66,7 @@ def get_batch_categorization_prompt(
 - Fast food/restaurants (McDonald's, Tim Hortons, Starbucks) → Eating Out
 - Gas stations (Shell, Esso, Petro-Canada) → Transport
 - Streaming services (Netflix, Spotify, Disney+) → Subscription
+- Recurring digital services (VPN, cloud storage, SaaS, app/online memberships) → Subscription
 - Transit (Presto, TTC, GO Transit) → Transport
 - Pharmacies (Shoppers Drug Mart, Rexall) → Shopping
 - Utilities (Hydro, Gas, Water, Internet, Phone) → Utilities
@@ -79,14 +80,14 @@ Example:
 [
   {{
     "transaction_id": 123,
-    "category": "Groceries",
     "note": "Weekly shopping",
+    "category": "Groceries",
     "confidence": "high"
   }},
   {{
     "transaction_id": 456,
-    "category": "Eating Out",
     "note": "Fast food lunch",
+    "category": "Eating Out",
     "confidence": "high"
   }}
 ]
@@ -137,14 +138,15 @@ def get_single_categorization_prompt(
 1. Choose ONLY from the available categories above
 2. Consider both the merchant name AND the transaction amount
 3. Use "Income" for positive amounts
-4. Use "Other" if you're uncertain
+4. Recurring digital services (VPN, cloud storage, SaaS, streaming, memberships) → Subscription
+5. Use "Other" if you're uncertain
 
 **Response Format:**
-Return a JSON object with:
+First write the note, then pick the category that matches it. Return a JSON object with:
 
 {{
-  "category": "chosen_category",
-  "note": "short user-friendly description (max 40 chars)",
+  "note": "short user-friendly description of the merchant (max 40 chars)",
+  "category": "chosen_category — must be consistent with the note",
   "confidence": "high|medium|low"
 }}
 

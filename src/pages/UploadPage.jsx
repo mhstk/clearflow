@@ -111,27 +111,63 @@ export const UploadPage = () => {
             }
           `}
         >
-          <div className="flex flex-col items-center">
-            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mb-4">
-              <Upload size={32} className="text-primary-600" />
+          {/* Hidden file input - always mounted so any label can trigger it */}
+          <input
+            id="file-upload"
+            type="file"
+            accept=".csv"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+
+          {uploadedFile && !uploadResult ? (
+            /* A file is selected - show it and the upload action right here */
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                <FileText size={32} className="text-blue-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                {previewData?.fileName}
+              </h3>
+              <p className="text-sm text-gray-500 mb-5">
+                {previewData?.fileSize} · Ready to upload
+              </p>
+              <div className="flex flex-col sm:flex-row items-center gap-3">
+                <Button variant="primary" onClick={handleProcessFile} disabled={isUploading}>
+                  {isUploading ? (
+                    <span className="flex items-center">
+                      <Loader size={16} className="mr-2 animate-spin" />
+                      Uploading...
+                    </span>
+                  ) : (
+                    'Upload to Server'
+                  )}
+                </Button>
+                <label
+                  htmlFor="file-upload"
+                  className="cursor-pointer text-sm font-medium text-gray-500 hover:text-gray-700"
+                >
+                  Choose a different file
+                </label>
+              </div>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Drop your CSV file here
-            </h3>
-            <p className="text-sm text-gray-500 mb-4">or</p>
-            <input
-              id="file-upload"
-              type="file"
-              accept=".csv"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-            <label htmlFor="file-upload" className="cursor-pointer">
-              <Button variant="primary" as="span">
-                Browse Files
-              </Button>
-            </label>
-          </div>
+          ) : (
+            /* No file yet - prompt to drop or browse */
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mb-4">
+                <Upload size={32} className="text-primary-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Drop your CSV file here
+              </h3>
+              <p className="text-sm text-gray-500 mb-4">or</p>
+              <label htmlFor="file-upload" className="cursor-pointer">
+                <Button variant="primary" as="span">
+                  Browse Files
+                </Button>
+              </label>
+            </div>
+          )}
         </div>
 
         {/* Supported Format Info */}
@@ -188,46 +224,6 @@ export const UploadPage = () => {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* File Preview Section */}
-      {previewData && !uploadResult && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                <FileText size={20} className="text-blue-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">File Ready</h3>
-                <p className="text-sm text-gray-500">
-                  {previewData.fileName} ({previewData.fileSize})
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="primary"
-              onClick={handleProcessFile}
-              disabled={isUploading}
-            >
-              {isUploading ? (
-                <span className="flex items-center">
-                  <Loader size={16} className="mr-2 animate-spin" />
-                  Uploading...
-                </span>
-              ) : (
-                'Upload to Server'
-              )}
-            </Button>
-          </div>
-
-          <div className="p-4 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-900">
-              Click "Upload to Server" to process and import your transactions.
-              The system will automatically categorize merchants and detect duplicates.
-            </p>
           </div>
         </div>
       )}

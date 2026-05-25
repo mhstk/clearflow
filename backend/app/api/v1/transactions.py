@@ -12,6 +12,7 @@ import logging
 from app.api.deps import get_db, get_current_user_id
 from app.models.transaction import Transaction
 from app.models.account import Account
+from app.models.merchant_cache import MerchantCache
 from app.db.session import SessionLocal
 from app.schemas.transaction import (
     TransactionResponse,
@@ -416,11 +417,13 @@ def _compute_aggregates(transactions: List[Transaction]) -> TransactionAggregate
     for txn in transactions:
         if txn.amount < 0:
             total_spent += txn.amount
+            # Daily chart shows gross spending, so only expenses count toward by_day
+            # (income on a day must not net against / hide that day's expenses).
+            by_day[txn.date.isoformat()] += txn.amount
         else:
             total_income += txn.amount
 
         by_category[txn.category] += txn.amount
-        by_day[txn.date.isoformat()] += txn.amount
 
     # Convert by_day to list of DayAggregate (descending order)
     day_list = [
@@ -510,6 +513,40 @@ def update_transaction_category(
 
     transaction.category = update.category
     transaction.category_source = "user"
+
+    # A manual correction is authoritative: make it stick for this merchant.
+    if transaction.merchant_key:
+        # 1. Update (or create) the merchant cache so future imports/analysis
+        #    use the corrected category instead of the stale AI-picked one.
+        cache = db.query(MerchantCache).filter(
+            MerchantCache.user_id == user_id,
+            MerchantCache.merchant_key == transaction.merchant_key
+        ).first()
+        if cache:
+            cache.suggested_category = update.category
+            cache.suggested_explanation = "User-assigned category"
+            cache.last_used_at = datetime.utcnow()
+        else:
+            db.add(MerchantCache(
+                user_id=user_id,
+                merchant_key=transaction.merchant_key,
+                suggested_category=update.category,
+                suggested_note=transaction.note_user or "",
+                suggested_explanation="User-assigned category",
+            ))
+
+        # 2. Apply the correction to other still-uncategorized transactions
+        #    of the same merchant.
+        db.query(Transaction).filter(
+            Transaction.user_id == user_id,
+            Transaction.merchant_key == transaction.merchant_key,
+            Transaction.id != transaction.id,
+            Transaction.category == "Uncategorized",
+        ).update(
+            {"category": update.category, "category_source": "user"},
+            synchronize_session=False,
+        )
+
     db.commit()
     db.refresh(transaction)
 
